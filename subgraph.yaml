@@ -16,50 +16,48 @@ dataSources:
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        - Approval
-        - Approval1
-        - ApprovalForAll
-        - EIP712DomainChanged
-        - Initialized
-        - Paused
-        - RoleAdminChanged
-        - RoleGranted
-        - RoleRevoked
-        - Transfer
-        - Transfer1
-        - Transfer2
-        - Unpaused
-        - Upgraded
+        # - Approval
+        # - Approval1
+        # - ApprovalForAll
+        # - EIP712DomainChanged
+        # - Initialized
+        # - Paused
+        # - RoleAdminChanged
+        # - RoleGranted
+        # - RoleRevoked
+        # - Transfer20
+        # - Transfer721
+        # - Unpaused
+        # - Upgraded
+        - Burn
       abis:
         - name: PurseToken404
           file: ./abis/PurseToken404.json
       eventHandlers:
-        - event: Approval(indexed address,indexed address,uint256)
-          handler: handleApproval
-        - event: Approval(indexed address,indexed address,indexed uint256)
-          handler: handleApproval1
-        - event: ApprovalForAll(indexed address,indexed address,bool)
-          handler: handleApprovalForAll
-        - event: EIP712DomainChanged()
-          handler: handleEIP712DomainChanged
-        - event: Initialized(uint64)
-          handler: handleInitialized
-        - event: Paused(address)
-          handler: handlePaused
-        - event: RoleAdminChanged(indexed bytes32,indexed bytes32,indexed bytes32)
-          handler: handleRoleAdminChanged
-        - event: RoleGranted(indexed bytes32,indexed address,indexed address)
-          handler: handleRoleGranted
-        - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
-          handler: handleRoleRevoked
+        # - event: Approval(indexed address,indexed address,uint256)
+        #   handler: handleApproval
+        # - event: Approval(indexed address,indexed address,indexed uint256)
+        #   handler: handleApproval1
+        # - event: ApprovalForAll(indexed address,indexed address,bool)
+        #   handler: handleApprovalForAll
+        # - event: EIP712DomainChanged()
+        #   handler: handleEIP712DomainChanged
+        # - event: Initialized(uint64)
+        #   handler: handleInitialized
+        # - event: Paused(address)
+        #   handler: handlePaused
+        # - event: RoleAdminChanged(indexed bytes32,indexed bytes32,indexed bytes32)
+        #   handler: handleRoleAdminChanged
+        # - event: RoleGranted(indexed bytes32,indexed address,indexed address)
+        #   handler: handleRoleGranted
+        # - event: RoleRevoked(indexed bytes32,indexed address,indexed address)
+        #   handler: handleRoleRevoked
         - event: Transfer(indexed address,indexed address,uint256)
-          handler: handleTransfer
-        - event: Transfer(indexed address,indexed address,uint256)
-          handler: handleTransfer1
-        - event: Transfer(indexed address,indexed address,indexed uint256)
-          handler: handleTransfer2
-        - event: Unpaused(address)
-          handler: handleUnpaused
-        - event: Upgraded(indexed address)
-          handler: handleUpgraded
+          handler: handleTransfer20
+        # - event: Transfer(indexed address,indexed address,indexed uint256)
+        #   handler: handleTransfer721
+        # - event: Unpaused(address)
+        #   handler: handleUnpaused
+        # - event: Upgraded(indexed address)
+        #   handler: handleUpgraded
       file: ./src/purse-token-404.ts

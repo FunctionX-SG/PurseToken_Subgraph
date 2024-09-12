@@ -1,3 +1,4 @@
+"""
 type Approval @entity(immutable: true) {
   id: Bytes!
   owner: Bytes! # address
@@ -82,17 +83,7 @@ type RoleRevoked @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type Transfer @entity(immutable: true) {
-  id: Bytes!
-  from: Bytes! # address
-  to: Bytes! # address
-  value: BigInt! # uint256
-  blockNumber: BigInt!
-  blockTimestamp: BigInt!
-  transactionHash: Bytes!
-}
-
-type Transfer1 @entity(immutable: true) {
+type Transfer20 @entity(immutable: true) {
   id: Bytes!
   from: Bytes! # address
   to: Bytes! # address
@@ -102,7 +93,7 @@ type Transfer1 @entity(immutable: true) {
   transactionHash: Bytes!
 }
 
-type Transfer2 @entity(immutable: true) {
+type Transfer721 @entity(immutable: true) {
   id: Bytes!
   from: Bytes! # address
   to: Bytes! # address
@@ -123,6 +114,14 @@ type Unpaused @entity(immutable: true) {
 type Upgraded @entity(immutable: true) {
   id: Bytes!
   implementation: Bytes! # address
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+"""
+type Burn @entity(immutable: true) {
+  id: Bytes!
+  totalAmountBurned: BigInt! # uint256
   blockNumber: BigInt!
   blockTimestamp: BigInt!
   transactionHash: Bytes!
