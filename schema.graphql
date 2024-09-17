@@ -126,3 +126,8 @@ type Burn @entity(immutable: true) {
   blockTimestamp: BigInt!
   transactionHash: Bytes!
 }
+
+type Store @entity {
+  id: String!
+  lastBurn: Burn!
+}

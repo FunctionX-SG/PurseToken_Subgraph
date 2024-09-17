@@ -4,59 +4,48 @@ import {
   test,
   clearStore,
   beforeAll,
-  afterAll
-} from "matchstick-as/assembly/index"
-import { Address, BigInt, Bytes } from "@graphprotocol/graph-ts"
-import { Approval } from "../generated/schema"
-import { Approval as ApprovalEvent } from "../generated/PurseToken404/PurseToken404"
-import { handleApproval } from "../src/purse-token-404"
-import { createApprovalEvent } from "./purse-token-404-utils"
+  afterAll,
+} from "matchstick-as/assembly/index";
+import { Address, BigInt } from "@graphprotocol/graph-ts";
+import { handleTransfer20 } from "../src/purse-token-404";
+import { createTransfer1Event } from "./purse-token-404-utils";
+import { ADDRESS_ZERO } from "../src/helpers";
 
 // Tests structure (matchstick-as >=0.5.0)
 // https://thegraph.com/docs/en/developer/matchstick/#tests-structure-0-5-0
 
-describe("Describe entity assertions", () => {
+describe("Burn events", () => {
   beforeAll(() => {
-    let owner = Address.fromString("0x0000000000000000000000000000000000000001")
-    let spender = Address.fromString(
-      "0x0000000000000000000000000000000000000001"
-    )
-    let value = BigInt.fromI32(234)
-    let newApprovalEvent = createApprovalEvent(owner, spender, value)
-    handleApproval(newApprovalEvent)
-  })
+    let from = Address.fromString("0x0000000000000000000000000000000000000001");
+    let to = Address.fromString("0x0000000000000000000000000000000000000001");
+    let value = BigInt.fromI32(234);
+    let newTransferEvent = createTransfer1Event(from, to, value);
+    handleTransfer20(newTransferEvent);
+  });
 
   afterAll(() => {
-    clearStore()
-  })
+    clearStore();
+  });
 
   // For more test scenarios, see:
   // https://thegraph.com/docs/en/developer/matchstick/#write-a-unit-test
 
-  test("Approval created and stored", () => {
-    assert.entityCount("Approval", 1)
+  test("Burn created and stored only if to zero address", () => {
+    assert.entityCount("Burn", 0);
 
-    // 0xa16081f360e3847006db660bae1c6d1b2e17ec2a is the default address used in newMockEvent() function
-    assert.fieldEquals(
-      "Approval",
-      "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
-      "owner",
-      "0x0000000000000000000000000000000000000001"
-    )
-    assert.fieldEquals(
-      "Approval",
-      "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
-      "spender",
-      "0x0000000000000000000000000000000000000001"
-    )
-    assert.fieldEquals(
-      "Approval",
-      "0xa16081f360e3847006db660bae1c6d1b2e17ec2a-1",
-      "value",
-      "234"
-    )
+    let from = Address.fromString("0x0000000000000000000000000000000000000002");
+    let to = Address.fromString(ADDRESS_ZERO);
+    let value = BigInt.fromI32(345);
+    let newTransferEvent = createTransfer1Event(from, to, value);
+    handleTransfer20(newTransferEvent);
+
+    assert.entityCount("Burn", 1);
+    let id = newTransferEvent.transaction.hash.concatI32(
+      newTransferEvent.logIndex.toI32()
+    );
+    assert.fieldEquals("Burn", id.toString(), "totalAmountBurned", "value");
 
     // More assert options:
     // https://thegraph.com/docs/en/developer/matchstick/#asserts
-  })
-})
+  });
+});
