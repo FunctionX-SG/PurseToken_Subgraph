@@ -7,20 +7,20 @@ import {
   afterAll,
 } from "matchstick-as/assembly/index";
 import { Address, BigInt } from "@graphprotocol/graph-ts";
-import { handleTransfer20 } from "../src/purse-token-404";
-import { createTransfer1Event } from "./purse-token-404-utils";
-import { ADDRESS_ZERO } from "../src/helpers";
+import { handleBurn, handleTransfer } from "../src/purse-token-404";
+import { createTransferEvent } from "./purse-token-404-utils";
+import { ADDRESS_ZERO, LIQUIDITY_ADDR } from "../src/helpers";
 
 // Tests structure (matchstick-as >=0.5.0)
 // https://thegraph.com/docs/en/developer/matchstick/#tests-structure-0-5-0
 
-describe("Burn events", () => {
+describe("Transfer events", () => {
   beforeAll(() => {
     let from = Address.fromString("0x0000000000000000000000000000000000000001");
     let to = Address.fromString("0x0000000000000000000000000000000000000001");
     let value = BigInt.fromI32(234);
-    let newTransferEvent = createTransfer1Event(from, to, value);
-    handleTransfer20(newTransferEvent);
+    let newTransferEvent = createTransferEvent(from, to, value);
+    handleTransfer(newTransferEvent);
   });
 
   afterAll(() => {
@@ -30,20 +30,25 @@ describe("Burn events", () => {
   // For more test scenarios, see:
   // https://thegraph.com/docs/en/developer/matchstick/#write-a-unit-test
 
-  test("Burn created and stored only if to zero address", () => {
-    assert.entityCount("Burn", 0);
+  test("Liquidity created and stored only if to zero address", () => {
+    assert.entityCount("Liquidity", 0);
 
     let from = Address.fromString("0x0000000000000000000000000000000000000002");
-    let to = Address.fromString(ADDRESS_ZERO);
+    let to = Address.fromString(LIQUIDITY_ADDR);
     let value = BigInt.fromI32(345);
-    let newTransferEvent = createTransfer1Event(from, to, value);
-    handleTransfer20(newTransferEvent);
+    let newTransferEvent = createTransferEvent(from, to, value);
+    handleTransfer(newTransferEvent);
 
-    assert.entityCount("Burn", 1);
+    assert.entityCount("Liquidity", 1);
     let id = newTransferEvent.transaction.hash.concatI32(
       newTransferEvent.logIndex.toI32()
     );
-    assert.fieldEquals("Burn", id.toString(), "totalAmountBurned", "value");
+    assert.fieldEquals(
+      "Liquidity",
+      id.toString(),
+      "totalAmountLiquidity",
+      "345"
+    );
 
     // More assert options:
     // https://thegraph.com/docs/en/developer/matchstick/#asserts
