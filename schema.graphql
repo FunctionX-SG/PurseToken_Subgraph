@@ -137,6 +137,8 @@ type Liquidity @entity(immutable: true) {
 
 type Store @entity {
   id: String!
-  lastBurn: Burn
-  lastLiquidity: Liquidity
+  accBurned: BigInt
+  prevBurnDate: BigInt
+  accLiquidity: BigInt
+  prevLiquidityDate: BigInt
 }
