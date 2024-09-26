@@ -1,10 +1,10 @@
-import { Address, BigInt, log } from "@graphprotocol/graph-ts";
+import { BigInt } from "@graphprotocol/graph-ts";
 import {
   Burn as BurnEvent,
   Transfer as TransferEvent,
 } from "../generated/PurseToken404/PurseToken404";
 import { Burn, Liquidity, Store } from "../generated/schema";
-import { ADDRESS_ZERO, isSameDate, LIQUIDITY_ADDR } from "./helpers";
+import { getDateString, isSameDate, LIQUIDITY_ADDR } from "./helpers";
 
 export function handleBurn(event: BurnEvent): void {
   if (event.params._value.equals(BigInt.fromI32(0))) {
@@ -12,33 +12,32 @@ export function handleBurn(event: BurnEvent): void {
   }
 
   let store = Store.load("1");
-  let accBurn = event.params._value;
+  let timeStamp = event.block.timestamp;
+  let currBurn = event.params._value;
+
   if (!store) {
     store = new Store("1");
-  } else if (store.accBurned) {
-    accBurn = accBurn.plus(store.accBurned!);
   }
-  store.accBurned = accBurn;
 
-  if (
-    !store.prevBurnDate ||
-    isSameDate(store.prevBurnDate!, event.block.timestamp)
-  ) {
-    store.prevBurnDate = event.block.timestamp;
-    store.save();
-    return;
+  if (store.prevBurn) {
+    let prevBurn = Burn.load(store.prevBurn!)!;
+    if (isSameDate(prevBurn.blockTimestamp, timeStamp)) {
+      prevBurn.totalAmountBurned = prevBurn.totalAmountBurned.plus(currBurn);
+      prevBurn.save();
+      return;
+    } else {
+      currBurn = currBurn.plus(prevBurn.totalAmountBurned);
+    }
   }
 
   let entity = new Burn(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
-  entity.totalAmountBurned = accBurn;
-  entity.blockNumber = event.block.number;
-  entity.blockTimestamp = store.prevBurnDate!;
-  entity.transactionHash = event.transaction.hash;
+  entity.totalAmountBurned = currBurn;
+  entity.blockTimestamp = timeStamp;
   entity.save();
+  store.prevBurn = entity.id;
 
-  store.prevBurnDate = event.block.timestamp;
   store.save();
 }
 
@@ -54,32 +53,32 @@ function handleLiquidity(event: TransferEvent): void {
   }
 
   let store = Store.load("1");
-  let accLiquidity = event.params._value;
+  let timeStamp = event.block.timestamp;
+  let liquidityDelta = event.params._value;
+
   if (!store) {
     store = new Store("1");
-  } else if (store.accLiquidity) {
-    accLiquidity = accLiquidity.plus(store.accLiquidity!);
   }
-  store.accLiquidity = accLiquidity;
 
-  if (
-    !store.prevLiquidityDate ||
-    isSameDate(store.prevLiquidityDate!, event.block.timestamp)
-  ) {
-    store.prevLiquidityDate = event.block.timestamp;
-    store.save();
-    return;
+  if (store.prevLiquidity) {
+    let prevLiquidity = Liquidity.load(store.prevLiquidity!)!;
+    if (isSameDate(prevLiquidity.blockTimestamp, timeStamp)) {
+      prevLiquidity.totalAmountLiquidity =
+        prevLiquidity.totalAmountLiquidity.plus(liquidityDelta);
+      prevLiquidity.save();
+      return;
+    } else {
+      liquidityDelta = liquidityDelta.plus(prevLiquidity.totalAmountLiquidity);
+    }
   }
 
   let entity = new Liquidity(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
-  entity.totalAmountLiquidity = accLiquidity;
-  entity.blockNumber = event.block.number;
-  entity.blockTimestamp = store.prevLiquidityDate!;
-  entity.transactionHash = event.transaction.hash;
+  entity.totalAmountLiquidity = liquidityDelta;
+  entity.blockTimestamp = timeStamp;
   entity.save();
+  store.prevLiquidity = entity.id;
 
-  store.prevLiquidityDate = event.block.timestamp;
   store.save();
 }

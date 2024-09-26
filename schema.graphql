@@ -119,26 +119,20 @@ type Upgraded @entity(immutable: true) {
   transactionHash: Bytes!
 }
 """
-type Burn @entity(immutable: true) {
-  id: Bytes!
+type Burn @entity {
+  id: Bytes! # date
   totalAmountBurned: BigInt! # uint256
-  blockNumber: BigInt!
   blockTimestamp: BigInt!
-  transactionHash: Bytes!
 }
 
-type Liquidity @entity(immutable: true) {
-  id: Bytes!
+type Liquidity @entity {
+  id: Bytes! # date
   totalAmountLiquidity: BigInt! # uint256
-  blockNumber: BigInt!
   blockTimestamp: BigInt!
-  transactionHash: Bytes!
 }
 
 type Store @entity {
   id: String!
-  accBurned: BigInt
-  prevBurnDate: BigInt
-  accLiquidity: BigInt
-  prevLiquidityDate: BigInt
+  prevBurn: Burn
+  prevLiquidity: Liquidity
 }

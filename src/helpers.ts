@@ -11,3 +11,7 @@ export function isSameDate(
   var secondDate = new Date(secondTimestamp.toI64() * 1000);
   return firstDate.toDateString() == secondDate.toDateString();
 }
+
+export function getDateString(timestamp: BigInt): string {
+  return new Date(timestamp.toI64() * 1000).toDateString();
+}
