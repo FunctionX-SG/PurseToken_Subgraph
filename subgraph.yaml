@@ -17,6 +17,7 @@ dataSources:
       language: wasm/assemblyscript
       entities:
         - Burn
+        - Liquidity
       abis:
         - name: PurseToken404
           file: ./abis/PurseToken404.json
@@ -26,3 +27,69 @@ dataSources:
         - event: Transfer(indexed address,indexed address,uint256)
           handler: handleTransfer
       file: ./src/purse-token-404.ts
+  - kind: ethereum
+    name: PurseStaking
+    network: bsc
+    source:
+      address: "0xFb1D31a3f51Fb9422c187492D8EA14921d6ea6aE"
+      abi: PurseStaking
+      startBlock: 16525101
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - StakingTVLUpdate
+      abis:
+        - name: PurseStaking
+          file: ./abis/PurseStaking.json
+      eventHandlers:
+        - event: Deposit(indexed address,uint256)
+          handler: handleDeposit
+        - event: WithdrawUnlockedStake(indexed address,uint256)
+          handler: handleWithdrawUnlocked
+        - event: WithdrawLockedStake(indexed address,uint256)
+          handler: handleWithdrawLocked
+      file: ./src/purse-staking.ts
+  - kind: ethereum
+    name: PurseFarm
+    network: bsc
+    source:
+      address: "0x439ec8159740a9B9a579F286963Ac1C050aF31C8"
+      abi: PurseFarm
+      startBlock: 13250931
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - FarmTVLUpdate
+      abis:
+        - name: PurseFarm
+          file: ./abis/PurseFarm.json
+      eventHandlers:
+        - event: Deposit(indexed address,uint256)
+          handler: handleDeposit
+        - event: Withdraw(indexed address,uint256)
+          handler: handleWithdraw
+      file: ./src/purse-farm.ts
+  - kind: ethereum
+    name: PurseBUSDPool
+    network: bsc
+    source:
+      address: "0x081F4B87F223621B4B31cB7A727BB583586eAD98"
+      abi: PurseBUSDPool
+      startBlock: 12733229
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - Bundle
+      abis:
+        - name: PurseBUSDPool
+          file: ./abis/PurseBUSDPool.json
+      eventHandlers:
+        - event: Sync(uint112,uint112)
+          handler: handleSync
+      file: ./src/purse-busd-pool.ts

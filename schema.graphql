@@ -5,7 +5,7 @@ type Approval @entity(immutable: true) {
   spender: Bytes! # address
   value: BigInt! # uint256
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 
@@ -15,7 +15,7 @@ type Approval1 @entity(immutable: true) {
   spender: Bytes! # address
   PurseToken404_id: BigInt! # uint256
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 
@@ -25,7 +25,7 @@ type ApprovalForAll @entity(immutable: true) {
   operator: Bytes! # address
   approved: Boolean! # bool
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 
@@ -33,7 +33,7 @@ type EIP712DomainChanged @entity(immutable: true) {
   id: Bytes!
 
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 
@@ -41,7 +41,7 @@ type Initialized @entity(immutable: true) {
   id: Bytes!
   version: BigInt! # uint64
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 
@@ -49,7 +49,7 @@ type Paused @entity(immutable: true) {
   id: Bytes!
   account: Bytes! # address
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 
@@ -59,7 +59,7 @@ type RoleAdminChanged @entity(immutable: true) {
   previousAdminRole: Bytes! # bytes32
   newAdminRole: Bytes! # bytes32
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 
@@ -69,7 +69,7 @@ type RoleGranted @entity(immutable: true) {
   account: Bytes! # address
   sender: Bytes! # address
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 
@@ -79,7 +79,7 @@ type RoleRevoked @entity(immutable: true) {
   account: Bytes! # address
   sender: Bytes! # address
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 
@@ -89,7 +89,7 @@ type Transfer20 @entity(immutable: true) {
   to: Bytes! # address
   amount: BigInt! # uint256
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 
@@ -99,7 +99,7 @@ type Transfer721 @entity(immutable: true) {
   to: Bytes! # address
   PurseToken404_id: BigInt! # uint256
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 
@@ -107,7 +107,7 @@ type Unpaused @entity(immutable: true) {
   id: Bytes!
   account: Bytes! # address
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 
@@ -115,24 +115,48 @@ type Upgraded @entity(immutable: true) {
   id: Bytes!
   implementation: Bytes! # address
   blockNumber: BigInt!
-  blockTimestamp: BigInt!
+  blocktimestamp: BigInt!
   transactionHash: Bytes!
 }
 """
 type Burn @entity {
   id: Bytes! # date
+  blocktimestamp: BigInt!
   totalAmountBurned: BigInt! # uint256
-  blockTimestamp: BigInt!
 }
 
 type Liquidity @entity {
   id: Bytes! # date
+  blocktimestamp: BigInt!
   totalAmountLiquidity: BigInt! # uint256
-  blockTimestamp: BigInt!
 }
 
 type Store @entity {
   id: String!
   prevBurn: Burn
   prevLiquidity: Liquidity
+  prevFarmTVL: FarmTVLUpdate
+  prevStakingTVL: StakingTVLUpdate
+}
+
+type FarmTVLUpdate @entity {
+  id: Bytes! # date
+  blocktimestamp: BigInt!
+  totalAmountLiquidity: BigInt!
+  totalLiquidityValueUSD: BigDecimal!
+}
+
+type StakingTVLUpdate @entity {
+  id: Bytes! # date
+  blocktimestamp: BigInt!
+  totalAmountLiquidity: BigInt!
+  totalLiquidityValueUSD: BigDecimal!
+}
+
+type Bundle @entity {
+  id: String!
+  lpPriceInUSD: BigDecimal!
+  pursePriceInUSD: BigDecimal!
+  purseReserves: BigDecimal
+  busdReserves: BigDecimal
 }
