@@ -3,7 +3,13 @@ import {
   Withdraw as WithdrawEvent,
 } from "../generated/PurseFarm/PurseFarm";
 import { Bundle, FarmTVLUpdate, Store } from "../generated/schema";
-import { isSameDate, ZERO_BD, ZERO_BI } from "./helpers";
+import {
+  convertTokenToDecimal,
+  isSameDate,
+  LP_TOKEN_DECIMALS,
+  ZERO_BD,
+  ZERO_BI,
+} from "./helpers";
 
 export function handleDeposit(event: DepositEvent): void {
   if (event.params.amount.equals(ZERO_BI)) {
@@ -23,15 +29,17 @@ export function handleDeposit(event: DepositEvent): void {
 
   if (store.prevFarmTVL) {
     let prevFarmTVL = FarmTVLUpdate.load(store.prevFarmTVL!)!;
-    if (isSameDate(prevFarmTVL.blocktimestamp, timestamp)) {
+    if (isSameDate(prevFarmTVL.blockTimestamp, timestamp)) {
       prevFarmTVL.totalAmountLiquidity =
         prevFarmTVL.totalAmountLiquidity.plus(currDeposit);
-      prevFarmTVL.totalLiquidityValueUSD = prevFarmTVL.totalAmountLiquidity
-        .toBigDecimal()
-        .times(lpPrice);
+      prevFarmTVL.totalLiquidityValueUSD = convertTokenToDecimal(
+        prevFarmTVL.totalAmountLiquidity,
+        LP_TOKEN_DECIMALS
+      ).times(lpPrice);
+      prevFarmTVL.save();
       return;
     } else {
-      currDeposit = currDeposit.plus(prevFarmTVL.totalAmountLiquidity);
+      currDeposit = prevFarmTVL.totalAmountLiquidity.plus(currDeposit);
     }
   }
 
@@ -39,10 +47,11 @@ export function handleDeposit(event: DepositEvent): void {
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
   entity.totalAmountLiquidity = currDeposit;
-  entity.totalLiquidityValueUSD = entity.totalAmountLiquidity
-    .toBigDecimal()
-    .times(lpPrice);
-  entity.blocktimestamp = timestamp;
+  entity.totalLiquidityValueUSD = convertTokenToDecimal(
+    entity.totalAmountLiquidity,
+    LP_TOKEN_DECIMALS
+  ).times(lpPrice);
+  entity.blockTimestamp = timestamp;
   entity.save();
   store.prevFarmTVL = entity.id;
 
@@ -59,7 +68,7 @@ export function handleWithdraw(event: WithdrawEvent): void {
 
   let store = Store.load("1");
   let timestamp = event.block.timestamp;
-  let currDeposit = event.params.amount;
+  let currWithdrawal = event.params.amount;
 
   if (!store) {
     store = new Store("1");
@@ -67,27 +76,29 @@ export function handleWithdraw(event: WithdrawEvent): void {
 
   if (store.prevFarmTVL) {
     let prevFarmTVL = FarmTVLUpdate.load(store.prevFarmTVL!)!;
-    if (isSameDate(prevFarmTVL.blocktimestamp, timestamp)) {
+    if (isSameDate(prevFarmTVL.blockTimestamp, timestamp)) {
       prevFarmTVL.totalAmountLiquidity =
-        prevFarmTVL.totalAmountLiquidity.minus(currDeposit);
-      prevFarmTVL.totalLiquidityValueUSD = prevFarmTVL.totalAmountLiquidity
-        .toBigDecimal()
-        .times(lpPrice);
+        prevFarmTVL.totalAmountLiquidity.minus(currWithdrawal);
+      prevFarmTVL.totalLiquidityValueUSD = convertTokenToDecimal(
+        prevFarmTVL.totalAmountLiquidity,
+        LP_TOKEN_DECIMALS
+      ).times(lpPrice);
       prevFarmTVL.save();
       return;
     } else {
-      currDeposit = prevFarmTVL.totalAmountLiquidity.minus(currDeposit);
+      currWithdrawal = prevFarmTVL.totalAmountLiquidity.minus(currWithdrawal);
     }
   }
 
   let entity = new FarmTVLUpdate(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
-  entity.totalAmountLiquidity = currDeposit;
-  entity.totalLiquidityValueUSD = entity.totalAmountLiquidity
-    .toBigDecimal()
-    .times(lpPrice);
-  entity.blocktimestamp = timestamp;
+  entity.totalAmountLiquidity = currWithdrawal;
+  entity.totalLiquidityValueUSD = convertTokenToDecimal(
+    entity.totalAmountLiquidity,
+    LP_TOKEN_DECIMALS
+  ).times(lpPrice);
+  entity.blockTimestamp = timestamp;
   entity.save();
   store.prevFarmTVL = entity.id;
 

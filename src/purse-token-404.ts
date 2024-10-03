@@ -20,7 +20,7 @@ export function handleBurn(event: BurnEvent): void {
 
   if (store.prevBurn) {
     let prevBurn = Burn.load(store.prevBurn!)!;
-    if (isSameDate(prevBurn.blocktimestamp, timestamp)) {
+    if (isSameDate(prevBurn.blockTimestamp, timestamp)) {
       prevBurn.totalAmountBurned = prevBurn.totalAmountBurned.plus(currBurn);
       prevBurn.save();
       return;
@@ -33,7 +33,7 @@ export function handleBurn(event: BurnEvent): void {
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
   entity.totalAmountBurned = currBurn;
-  entity.blocktimestamp = timestamp;
+  entity.blockTimestamp = timestamp;
   entity.save();
   store.prevBurn = entity.id;
 
@@ -61,7 +61,7 @@ function handleLiquidity(event: TransferEvent): void {
 
   if (store.prevLiquidity) {
     let prevLiquidity = Liquidity.load(store.prevLiquidity!)!;
-    if (isSameDate(prevLiquidity.blocktimestamp, timestamp)) {
+    if (isSameDate(prevLiquidity.blockTimestamp, timestamp)) {
       prevLiquidity.totalAmountLiquidity =
         prevLiquidity.totalAmountLiquidity.plus(liquidityDelta);
       prevLiquidity.save();
@@ -75,7 +75,7 @@ function handleLiquidity(event: TransferEvent): void {
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
   entity.totalAmountLiquidity = liquidityDelta;
-  entity.blocktimestamp = timestamp;
+  entity.blockTimestamp = timestamp;
   entity.save();
   store.prevLiquidity = entity.id;
 

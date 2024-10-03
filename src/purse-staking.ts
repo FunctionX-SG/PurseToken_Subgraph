@@ -5,7 +5,13 @@ import {
   WithdrawUnlockedStake as WithdrawUnlockedStakeEvent,
 } from "../generated/PurseStaking/PurseStaking";
 import { Bundle, StakingTVLUpdate, Store } from "../generated/schema";
-import { isSameDate, ZERO_BD, ZERO_BI } from "./helpers";
+import {
+  convertTokenToDecimal,
+  isSameDate,
+  PURSE_TOKEN_DECIMALS,
+  ZERO_BD,
+  ZERO_BI,
+} from "./helpers";
 
 export function handleDeposit(event: DepositEvent): void {
   if (event.params._value.equals(ZERO_BI)) {
@@ -25,11 +31,13 @@ export function handleDeposit(event: DepositEvent): void {
 
   if (store.prevStakingTVL) {
     let prevStakingTVL = StakingTVLUpdate.load(store.prevStakingTVL!)!;
-    if (isSameDate(prevStakingTVL.blocktimestamp, timestamp)) {
+    if (isSameDate(prevStakingTVL.blockTimestamp, timestamp)) {
       prevStakingTVL.totalAmountLiquidity =
         prevStakingTVL.totalAmountLiquidity.plus(currDeposit);
-      prevStakingTVL.totalLiquidityValueUSD =
-        prevStakingTVL.totalAmountLiquidity.toBigDecimal().times(pursePrice);
+      prevStakingTVL.totalLiquidityValueUSD = convertTokenToDecimal(
+        prevStakingTVL.totalAmountLiquidity,
+        PURSE_TOKEN_DECIMALS
+      ).times(pursePrice);
       prevStakingTVL.save();
       return;
     } else {
@@ -41,10 +49,11 @@ export function handleDeposit(event: DepositEvent): void {
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
   entity.totalAmountLiquidity = currDeposit;
-  entity.totalLiquidityValueUSD = entity.totalAmountLiquidity
-    .toBigDecimal()
-    .times(pursePrice);
-  entity.blocktimestamp = timestamp;
+  entity.totalLiquidityValueUSD = convertTokenToDecimal(
+    entity.totalAmountLiquidity,
+    PURSE_TOKEN_DECIMALS
+  ).times(pursePrice);
+  entity.blockTimestamp = timestamp;
   entity.save();
   store.prevStakingTVL = entity.id;
 
@@ -90,12 +99,13 @@ function handleAnyWithdraw(
 
   if (store.prevStakingTVL) {
     let prevStakingTVL = StakingTVLUpdate.load(store.prevStakingTVL!)!;
-    if (isSameDate(prevStakingTVL.blocktimestamp, timestamp)) {
+    if (isSameDate(prevStakingTVL.blockTimestamp, timestamp)) {
       prevStakingTVL.totalAmountLiquidity =
         prevStakingTVL.totalAmountLiquidity.minus(currDeposit);
-      prevStakingTVL.totalLiquidityValueUSD =
-        prevStakingTVL.totalAmountLiquidity.toBigDecimal().times(pursePrice);
-      prevStakingTVL.save();
+      prevStakingTVL.totalLiquidityValueUSD = convertTokenToDecimal(
+        prevStakingTVL.totalAmountLiquidity,
+        PURSE_TOKEN_DECIMALS
+      ).times(pursePrice);
       return;
     } else {
       currDeposit = prevStakingTVL.totalAmountLiquidity.minus(currDeposit);
@@ -104,10 +114,11 @@ function handleAnyWithdraw(
 
   let entity = new StakingTVLUpdate(eventId);
   entity.totalAmountLiquidity = currDeposit;
-  entity.totalLiquidityValueUSD = entity.totalAmountLiquidity
-    .toBigDecimal()
-    .times(pursePrice);
-  entity.blocktimestamp = timestamp;
+  entity.totalLiquidityValueUSD = convertTokenToDecimal(
+    entity.totalAmountLiquidity,
+    PURSE_TOKEN_DECIMALS
+  ).times(pursePrice);
+  entity.blockTimestamp = timestamp;
   entity.save();
   store.prevStakingTVL = entity.id;
 
