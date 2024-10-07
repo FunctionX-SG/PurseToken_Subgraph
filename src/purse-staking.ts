@@ -4,10 +4,11 @@ import {
   WithdrawLockedStake as WithdrawLockedStakeEvent,
   WithdrawUnlockedStake as WithdrawUnlockedStakeEvent,
 } from "../generated/PurseStaking/PurseStaking";
-import { Bundle, StakingTVLUpdate, Store } from "../generated/schema";
+import { FarmPool, StakingTVLUpdate, Store } from "../generated/schema";
 import {
   convertTokenToDecimal,
   isSameDate,
+  PURSE_BUSD_POOL_ADDRESS,
   PURSE_TOKEN_DECIMALS,
   ZERO_BD,
   ZERO_BI,
@@ -18,8 +19,8 @@ export function handleDeposit(event: DepositEvent): void {
     return;
   }
 
-  let bundle = Bundle.load("1");
-  let pursePrice = bundle ? bundle.pursePriceInUSD : ZERO_BD;
+  let farmPool = FarmPool.load(PURSE_BUSD_POOL_ADDRESS);
+  let pursePrice = farmPool ? farmPool.pursePriceInUSD : ZERO_BD;
 
   let store = Store.load("1");
   let timestamp = event.block.timestamp;
@@ -87,8 +88,8 @@ function handleAnyWithdraw(
     return;
   }
 
-  let bundle = Bundle.load("1");
-  let pursePrice = bundle ? bundle.pursePriceInUSD : ZERO_BD;
+  let farmPool = FarmPool.load(PURSE_BUSD_POOL_ADDRESS);
+  let pursePrice = farmPool ? farmPool.pursePriceInUSD : ZERO_BD;
 
   let store = Store.load("1");
   let currDeposit = withdrawValue;

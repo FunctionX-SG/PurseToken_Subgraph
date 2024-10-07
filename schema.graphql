@@ -32,9 +32,11 @@ type StakingTVLUpdate @entity {
   totalLiquidityValueUSD: BigDecimal!
 }
 
-type Bundle @entity {
-  id: String!
+type FarmPool @entity {
+  id: Bytes! # lptoken address
   lpPriceInUSD: BigDecimal!
+  lpTotalSupply: BigInt!
+  lpDecimals: BigInt!
   pursePriceInUSD: BigDecimal!
   purseReserves: BigDecimal
   busdReserves: BigDecimal

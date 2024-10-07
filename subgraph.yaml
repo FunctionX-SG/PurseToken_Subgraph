@@ -67,29 +67,32 @@ dataSources:
       abis:
         - name: PurseFarm
           file: ./abis/PurseFarm.json
+        - name: LpErc20
+          file: ./abis/LP_Erc20.json
       eventHandlers:
-        - event: Deposit(indexed address,uint256)
-          handler: handleDeposit
-        - event: Withdraw(indexed address,uint256)
-          handler: handleWithdraw
+        - event: AddNewPool(indexed address,indexed address,uint256,uint256,uint256)
+          handler: handleAddPool
       file: ./src/purse-farm.ts
+templates:
   - kind: ethereum
-    name: PurseBUSDPool
+    name: FarmPoolContract
     network: bsc
     source:
-      address: "0x081F4B87F223621B4B31cB7A727BB583586eAD98"
-      abi: PurseBUSDPool
-      startBlock: 12733229
+      abi: FarmPool
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.7
       language: wasm/assemblyscript
       entities:
-        - Bundle
+        - FarmPool
       abis:
-        - name: PurseBUSDPool
-          file: ./abis/PurseBUSDPool.json
+        - name: FarmPool
+          file: ./abis/FarmPool.json
+        - name: LpErc20
+          file: ./abis/LP_Erc20.json
       eventHandlers:
         - event: Sync(uint112,uint112)
           handler: handleSync
-      file: ./src/purse-busd-pool.ts
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/purse-farm-pool.ts
