@@ -1,3 +1,4 @@
+import { BigInt } from "@graphprotocol/graph-ts";
 import {
   Sync as SyncEvent,
   Transfer as TransferEvent,
@@ -14,7 +15,7 @@ import {
 } from "./helpers";
 
 export function handleSync(event: SyncEvent): void {
-  let bundle = FarmPool.load(event.address)!;
+  const bundle = FarmPool.load(event.address)!;
 
   bundle.purseReserves = convertTokenToDecimal(
     event.params.reserve0,
@@ -30,7 +31,7 @@ export function handleSync(event: SyncEvent): void {
     ? bundle.busdReserves!.div(bundle.purseReserves!)
     : ZERO_BD;
 
-  let poolTVL = bundle
+  const poolTVL = bundle
     .purseReserves!.times(bundle.pursePriceInUSD)
     .plus(bundle.busdReserves!);
 
@@ -46,30 +47,29 @@ export function handleTransfer(event: TransferEvent): void {
     return;
   }
   if (event.params.from.equals(PURSE_FARM_ADDRESS)) {
-    handleWithdraw(event);
+    handleFarmTransfer(event, event.params.value.neg());
   } else if (event.params.to.equals(PURSE_FARM_ADDRESS)) {
-    handleDeposit(event);
+    handleFarmTransfer(event, event.params.value);
   }
 }
 
-function handleWithdraw(event: TransferEvent): void {
-  let farmPool = FarmPool.load(event.address)!;
-  let lpPrice =
+function handleFarmTransfer(event: TransferEvent, delta: BigInt): void {
+  const farmPool = FarmPool.load(event.address)!;
+  const lpPrice =
     farmPool && farmPool.lpPriceInUSD ? farmPool.lpPriceInUSD : ZERO_BD;
 
   let store = Store.load("1");
-  let timestamp = event.block.timestamp;
-  let currWithdrawal = event.params.value;
+  const timestamp = event.block.timestamp;
 
   if (!store) {
     store = new Store("1");
   }
 
   if (store.prevFarmTVL) {
-    let prevFarmTVL = FarmTVLUpdate.load(store.prevFarmTVL!)!;
+    const prevFarmTVL = FarmTVLUpdate.load(store.prevFarmTVL!)!;
     if (isSameDate(prevFarmTVL.blockTimestamp, timestamp)) {
       prevFarmTVL.totalAmountLiquidity =
-        prevFarmTVL.totalAmountLiquidity.minus(currWithdrawal);
+        prevFarmTVL.totalAmountLiquidity.plus(delta);
       prevFarmTVL.totalLiquidityValueUSD = convertTokenToDecimal(
         prevFarmTVL.totalAmountLiquidity,
         farmPool.lpDecimals
@@ -77,58 +77,14 @@ function handleWithdraw(event: TransferEvent): void {
       prevFarmTVL.save();
       return;
     } else {
-      currWithdrawal = prevFarmTVL.totalAmountLiquidity.minus(currWithdrawal);
+      delta = prevFarmTVL.totalAmountLiquidity.plus(delta);
     }
   }
 
-  let entity = new FarmTVLUpdate(
+  const entity = new FarmTVLUpdate(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
-  entity.totalAmountLiquidity = currWithdrawal;
-  entity.totalLiquidityValueUSD = convertTokenToDecimal(
-    entity.totalAmountLiquidity,
-    farmPool.lpDecimals
-  ).times(lpPrice);
-  entity.blockTimestamp = timestamp;
-  entity.save();
-  store.prevFarmTVL = entity.id;
-
-  store.save();
-}
-
-function handleDeposit(event: TransferEvent): void {
-  let farmPool = FarmPool.load(event.address)!;
-  let lpPrice =
-    farmPool && farmPool.lpPriceInUSD ? farmPool.lpPriceInUSD : ZERO_BD;
-
-  let store = Store.load("1");
-  let timestamp = event.block.timestamp;
-  let currDeposit = event.params.value;
-
-  if (!store) {
-    store = new Store("1");
-  }
-
-  if (store.prevFarmTVL) {
-    let prevFarmTVL = FarmTVLUpdate.load(store.prevFarmTVL!)!;
-    if (isSameDate(prevFarmTVL.blockTimestamp, timestamp)) {
-      prevFarmTVL.totalAmountLiquidity =
-        prevFarmTVL.totalAmountLiquidity.plus(currDeposit);
-      prevFarmTVL.totalLiquidityValueUSD = convertTokenToDecimal(
-        prevFarmTVL.totalAmountLiquidity,
-        farmPool.lpDecimals
-      ).times(lpPrice);
-      prevFarmTVL.save();
-      return;
-    } else {
-      currDeposit = prevFarmTVL.totalAmountLiquidity.plus(currDeposit);
-    }
-  }
-
-  let entity = new FarmTVLUpdate(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
-  );
-  entity.totalAmountLiquidity = currDeposit;
+  entity.totalAmountLiquidity = delta;
   entity.totalLiquidityValueUSD = convertTokenToDecimal(
     entity.totalAmountLiquidity,
     farmPool.lpDecimals

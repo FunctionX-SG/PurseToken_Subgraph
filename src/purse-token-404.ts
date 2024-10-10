@@ -11,7 +11,7 @@ export function handleBurn(event: BurnEvent): void {
   }
 
   let store = Store.load("1");
-  let timestamp = event.block.timestamp;
+  const timestamp = event.block.timestamp;
   let currBurn = event.params._value;
 
   if (!store) {
@@ -19,7 +19,7 @@ export function handleBurn(event: BurnEvent): void {
   }
 
   if (store.prevBurn) {
-    let prevBurn = Burn.load(store.prevBurn!)!;
+    const prevBurn = Burn.load(store.prevBurn!)!;
     if (isSameDate(prevBurn.blockTimestamp, timestamp)) {
       prevBurn.totalAmountBurned = prevBurn.totalAmountBurned.plus(currBurn);
       prevBurn.save();
@@ -29,7 +29,7 @@ export function handleBurn(event: BurnEvent): void {
     }
   }
 
-  let entity = new Burn(
+  const entity = new Burn(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
   entity.totalAmountBurned = currBurn;
@@ -52,7 +52,7 @@ function handleLiquidity(event: TransferEvent): void {
   }
 
   let store = Store.load("1");
-  let timestamp = event.block.timestamp;
+  const timestamp = event.block.timestamp;
   let liquidityDelta = event.params._value;
 
   if (!store) {
@@ -60,7 +60,7 @@ function handleLiquidity(event: TransferEvent): void {
   }
 
   if (store.prevLiquidity) {
-    let prevLiquidity = Liquidity.load(store.prevLiquidity!)!;
+    const prevLiquidity = Liquidity.load(store.prevLiquidity!)!;
     if (isSameDate(prevLiquidity.blockTimestamp, timestamp)) {
       prevLiquidity.totalAmountLiquidity =
         prevLiquidity.totalAmountLiquidity.plus(liquidityDelta);
@@ -71,7 +71,7 @@ function handleLiquidity(event: TransferEvent): void {
     }
   }
 
-  let entity = new Liquidity(
+  const entity = new Liquidity(
     event.transaction.hash.concatI32(event.logIndex.toI32())
   );
   entity.totalAmountLiquidity = liquidityDelta;
