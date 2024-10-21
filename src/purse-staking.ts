@@ -40,7 +40,7 @@ export function handleWithdrawUnlocked(
   );
 }
 
-function handleStakingChange(
+export function handleStakingChange(
   eventId: Bytes,
   timestamp: BigInt,
   delta: BigInt

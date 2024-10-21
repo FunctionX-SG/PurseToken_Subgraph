@@ -1,4 +1,4 @@
-import { BigInt } from "@graphprotocol/graph-ts";
+import { BigInt, ethereum } from "@graphprotocol/graph-ts";
 import {
   Sync as SyncEvent,
   Transfer as TransferEvent,
@@ -13,6 +13,7 @@ import {
   ZERO_BD,
   ZERO_BI,
 } from "./helpers";
+import { handleStakingChange } from "./purse-staking";
 
 export function handleSync(event: SyncEvent): void {
   const bundle = FarmPool.load(event.address)!;
@@ -40,6 +41,13 @@ export function handleSync(event: SyncEvent): void {
   );
 
   bundle.save();
+
+  handleFarmTransfer(event, ZERO_BI);
+  handleStakingChange(
+    event.transaction.hash.concatI32(event.logIndex.toI32()),
+    event.block.timestamp,
+    ZERO_BI
+  );
 }
 
 export function handleTransfer(event: TransferEvent): void {
@@ -53,7 +61,7 @@ export function handleTransfer(event: TransferEvent): void {
   }
 }
 
-function handleFarmTransfer(event: TransferEvent, delta: BigInt): void {
+function handleFarmTransfer(event: ethereum.Event, delta: BigInt): void {
   const farmPool = FarmPool.load(event.address)!;
   const lpPrice =
     farmPool && farmPool.lpPriceInUSD ? farmPool.lpPriceInUSD : ZERO_BD;
