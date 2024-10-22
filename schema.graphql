@@ -40,4 +40,5 @@ type FarmPool @entity {
   pursePriceInUSD: BigDecimal!
   purseReserves: BigDecimal
   busdReserves: BigDecimal
+  latestFarmBalanceOf: BigInt!
 }

@@ -3,7 +3,8 @@ import {
   Transfer as TransferEvent,
 } from "../generated/PurseToken404/PurseToken404";
 import { Burn, Liquidity, Store } from "../generated/schema";
-import { isSameDate, LIQUIDITY_ADDR, ZERO_BI } from "./helpers";
+import { LIQUIDITY_ADDR, ZERO_BI } from "./constants";
+import { isSameDate } from "./helpers";
 
 export function handleBurn(event: BurnEvent): void {
   if (event.params._value.equals(ZERO_BI)) {
@@ -21,6 +22,7 @@ export function handleBurn(event: BurnEvent): void {
   if (store.prevBurn) {
     const prevBurn = Burn.load(store.prevBurn!)!;
     if (isSameDate(prevBurn.blockTimestamp, timestamp)) {
+      prevBurn.blockTimestamp = timestamp;
       prevBurn.totalAmountBurned = prevBurn.totalAmountBurned.plus(currBurn);
       prevBurn.save();
       return;
@@ -62,6 +64,7 @@ function handleLiquidity(event: TransferEvent): void {
   if (store.prevLiquidity) {
     const prevLiquidity = Liquidity.load(store.prevLiquidity!)!;
     if (isSameDate(prevLiquidity.blockTimestamp, timestamp)) {
+      prevLiquidity.blockTimestamp = timestamp;
       prevLiquidity.totalAmountLiquidity =
         prevLiquidity.totalAmountLiquidity.plus(liquidityDelta);
       prevLiquidity.save();

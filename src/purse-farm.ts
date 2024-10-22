@@ -3,7 +3,7 @@ import { LpErc20 } from "../generated/PurseFarm/LpErc20";
 import { FarmPool } from "../generated/schema";
 import { FarmPoolContract } from "../generated/templates";
 import { BigInt, log } from "@graphprotocol/graph-ts";
-import { ZERO_BD, ZERO_BI } from "./helpers";
+import { ZERO_BD, ZERO_BI } from "./constants";
 
 export function handleAddPool(event: AddNewPoolEvent): void {
   FarmPoolContract.create(event.params.lpToken);
@@ -31,6 +31,7 @@ export function handleAddPool(event: AddNewPoolEvent): void {
 
   farmPool.lpPriceInUSD = ZERO_BD;
   farmPool.pursePriceInUSD = ZERO_BD;
+  farmPool.latestFarmBalanceOf = ZERO_BI;
 
   log.info(
     "farmPoolAdded: farmPool (id/lpToken address: {}) created on block number {}",

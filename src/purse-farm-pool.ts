@@ -1,19 +1,17 @@
-import { BigInt, ethereum } from "@graphprotocol/graph-ts";
+import { Address, BigInt, ethereum, log } from "@graphprotocol/graph-ts";
 import {
+  LpErc20 as LpErc20Contract,
   Sync as SyncEvent,
-  Transfer as TransferEvent,
-} from "../generated/PurseBUSDPool/PurseBUSDPool";
+} from "../generated/PurseFarm/LpErc20";
 import { FarmPool, FarmTVLUpdate, Store } from "../generated/schema";
 import {
   BUSD_TOKEN_DECIMALS,
-  convertTokenToDecimal,
-  isSameDate,
   PURSE_FARM_ADDRESS,
   PURSE_TOKEN_DECIMALS,
   ZERO_BD,
-  ZERO_BI,
-} from "./helpers";
-import { handleStakingChange } from "./purse-staking";
+} from "./constants";
+import { updateBalanceOf } from "./purse-staking";
+import { convertTokenToDecimal, isSameDate } from "./helpers";
 
 export function handleSync(event: SyncEvent): void {
   const bundle = FarmPool.load(event.address)!;
@@ -40,25 +38,29 @@ export function handleSync(event: SyncEvent): void {
     convertTokenToDecimal(bundle.lpTotalSupply, bundle.lpDecimals)
   );
 
-  bundle.save();
+  const lpContract = LpErc20Contract.bind(event.address);
 
-  handleFarmTransfer(event, ZERO_BI);
-  handleStakingChange(
-    event.transaction.hash.concatI32(event.logIndex.toI32()),
-    event.block.timestamp,
-    ZERO_BI
+  const farmBalanceOfResponse = lpContract.try_balanceOf(
+    Address.fromBytes(PURSE_FARM_ADDRESS)
   );
-}
-
-export function handleTransfer(event: TransferEvent): void {
-  if (event.params.value.equals(ZERO_BI)) {
+  if (farmBalanceOfResponse.reverted) {
+    log.error(
+      "try_balanceOf call reverted. LP Address: {}, PURSE_FARM_ADDRESS Address: {}",
+      [event.address.toHexString(), PURSE_FARM_ADDRESS.toHexString()]
+    );
     return;
   }
-  if (event.params.from.equals(PURSE_FARM_ADDRESS)) {
-    handleFarmTransfer(event, event.params.value.neg());
-  } else if (event.params.to.equals(PURSE_FARM_ADDRESS)) {
-    handleFarmTransfer(event, event.params.value);
-  }
+  const farmBalanceOf = farmBalanceOfResponse.value;
+  const farmBalanceDelta = farmBalanceOf.minus(bundle.latestFarmBalanceOf);
+
+  bundle.latestFarmBalanceOf = farmBalanceOf;
+  bundle.save();
+
+  handleFarmTransfer(event, farmBalanceDelta);
+  updateBalanceOf(
+    event.transaction.hash.concatI32(event.logIndex.toI32()).concatI32(0),
+    event.block.timestamp
+  );
 }
 
 function handleFarmTransfer(event: ethereum.Event, delta: BigInt): void {
@@ -76,6 +78,7 @@ function handleFarmTransfer(event: ethereum.Event, delta: BigInt): void {
   if (store.prevFarmTVL) {
     const prevFarmTVL = FarmTVLUpdate.load(store.prevFarmTVL!)!;
     if (isSameDate(prevFarmTVL.blockTimestamp, timestamp)) {
+      prevFarmTVL.blockTimestamp = timestamp;
       prevFarmTVL.totalAmountLiquidity =
         prevFarmTVL.totalAmountLiquidity.plus(delta);
       prevFarmTVL.totalLiquidityValueUSD = convertTokenToDecimal(
@@ -90,7 +93,7 @@ function handleFarmTransfer(event: ethereum.Event, delta: BigInt): void {
   }
 
   const entity = new FarmTVLUpdate(
-    event.transaction.hash.concatI32(event.logIndex.toI32())
+    event.transaction.hash.concatI32(event.logIndex.toI32()).concatI32(1)
   );
   entity.totalAmountLiquidity = delta;
   entity.totalLiquidityValueUSD = convertTokenToDecimal(
