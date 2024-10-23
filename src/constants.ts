@@ -13,10 +13,9 @@ export const PURSE_STAKING_ADDRESS = Address.fromString(
   "0xFb1D31a3f51Fb9422c187492D8EA14921d6ea6aE"
 );
 
+export const ZERO_BD = BigDecimal.fromString("0");
 export const ZERO_BI = BigInt.fromI32(0);
 export const BI_18: BigInt = BigInt.fromI32(18);
-export const ZERO_BD = BigDecimal.fromString("0");
 
 export const PURSE_TOKEN_DECIMALS: BigInt = BI_18;
 export const BUSD_TOKEN_DECIMALS: BigInt = BI_18;
-export const LP_TOKEN_DECIMALS: BigInt = BI_18;

@@ -3,7 +3,7 @@ import { LpErc20 } from "../generated/PurseFarm/LpErc20";
 import { FarmPool } from "../generated/schema";
 import { FarmPoolContract } from "../generated/templates";
 import { BigInt, log } from "@graphprotocol/graph-ts";
-import { ZERO_BD, ZERO_BI } from "./constants";
+import { BI_18, ZERO_BD, ZERO_BI } from "./constants";
 
 export function handleAddPool(event: AddNewPoolEvent): void {
   FarmPoolContract.create(event.params.lpToken);
@@ -17,7 +17,7 @@ export function handleAddPool(event: AddNewPoolEvent): void {
     log.error("handleAddPool: try_decimals reverted for farmPool {}", [
       farmPool.id.toHexString(),
     ]);
-    farmPool.lpDecimals = ZERO_BI;
+    farmPool.lpDecimals = BI_18;
   }
   const totalSupplyResult = lpToken.try_totalSupply();
   if (!totalSupplyResult.reverted) {
@@ -32,6 +32,7 @@ export function handleAddPool(event: AddNewPoolEvent): void {
   farmPool.lpPriceInUSD = ZERO_BD;
   farmPool.pursePriceInUSD = ZERO_BD;
   farmPool.latestFarmBalanceOf = ZERO_BI;
+  farmPool.latestFarmValue = ZERO_BD;
 
   log.info(
     "farmPoolAdded: farmPool (id/lpToken address: {}) created on block number {}",

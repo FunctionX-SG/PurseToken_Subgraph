@@ -1,4 +1,10 @@
-import { Address, BigInt, ethereum, log } from "@graphprotocol/graph-ts";
+import {
+  Address,
+  BigDecimal,
+  BigInt,
+  ethereum,
+  log,
+} from "@graphprotocol/graph-ts";
 import {
   LpErc20 as LpErc20Contract,
   Sync as SyncEvent,
@@ -14,15 +20,15 @@ import { updateBalanceOf } from "./purse-staking";
 import { convertTokenToDecimal, isSameDate } from "./helpers";
 
 export function handleSync(event: SyncEvent): void {
-  const bundle = FarmPool.load(event.address)!;
+  const farmPool = FarmPool.load(event.address)!;
   const lpContract = LpErc20Contract.bind(event.address);
 
-  bundle.purseReserves = convertTokenToDecimal(
+  farmPool.purseReserves = convertTokenToDecimal(
     event.params.reserve0,
     PURSE_TOKEN_DECIMALS
   );
 
-  bundle.busdReserves = convertTokenToDecimal(
+  farmPool.busdReserves = convertTokenToDecimal(
     event.params.reserve1,
     BUSD_TOKEN_DECIMALS
   );
@@ -35,18 +41,18 @@ export function handleSync(event: SyncEvent): void {
     );
     return;
   }
-  bundle.lpTotalSupply = lpTotalSupplyResponse.value;
+  farmPool.lpTotalSupply = lpTotalSupplyResponse.value;
 
-  bundle.pursePriceInUSD = bundle.purseReserves!.notEqual(ZERO_BD)
-    ? bundle.busdReserves!.div(bundle.purseReserves!)
+  farmPool.pursePriceInUSD = farmPool.purseReserves!.notEqual(ZERO_BD)
+    ? farmPool.busdReserves!.div(farmPool.purseReserves!)
     : ZERO_BD;
 
-  const poolTVL = bundle
-    .purseReserves!.times(bundle.pursePriceInUSD)
-    .plus(bundle.busdReserves!);
+  const poolTVL = farmPool
+    .purseReserves!.times(farmPool.pursePriceInUSD)
+    .plus(farmPool.busdReserves!);
 
-  bundle.lpPriceInUSD = poolTVL.div(
-    convertTokenToDecimal(bundle.lpTotalSupply, bundle.lpDecimals)
+  farmPool.lpPriceInUSD = poolTVL.div(
+    convertTokenToDecimal(farmPool.lpTotalSupply, farmPool.lpDecimals)
   );
 
   const farmBalanceOfResponse = lpContract.try_balanceOf(
@@ -60,23 +66,30 @@ export function handleSync(event: SyncEvent): void {
     return;
   }
   const farmBalanceOf = farmBalanceOfResponse.value;
-  const farmBalanceDelta = farmBalanceOf.minus(bundle.latestFarmBalanceOf);
+  const farmBalanceDelta = farmBalanceOf.minus(farmPool.latestFarmBalanceOf);
 
-  bundle.latestFarmBalanceOf = farmBalanceOf;
-  bundle.save();
+  const newFarmValue = convertTokenToDecimal(
+    farmBalanceOf,
+    farmPool.lpDecimals
+  ).times(farmPool.lpPriceInUSD);
+  const farmValueDelta = newFarmValue.minus(farmPool.latestFarmValue);
 
-  handleFarmTransfer(event, farmBalanceDelta);
+  farmPool.latestFarmBalanceOf = farmBalanceOf;
+  farmPool.latestFarmValue = newFarmValue;
+  farmPool.save();
+
+  handleFarmTransfer(event, farmBalanceDelta, farmValueDelta);
   updateBalanceOf(
     event.transaction.hash.concatI32(event.logIndex.toI32()).concatI32(0),
     event.block.timestamp
   );
 }
 
-function handleFarmTransfer(event: ethereum.Event, delta: BigInt): void {
-  const farmPool = FarmPool.load(event.address)!;
-  const lpPrice =
-    farmPool && farmPool.lpPriceInUSD ? farmPool.lpPriceInUSD : ZERO_BD;
-
+function handleFarmTransfer(
+  event: ethereum.Event,
+  balanceDelta: BigInt,
+  valueDelta: BigDecimal
+): void {
   let store = Store.load("1");
   const timestamp = event.block.timestamp;
 
@@ -89,26 +102,22 @@ function handleFarmTransfer(event: ethereum.Event, delta: BigInt): void {
     if (isSameDate(prevFarmTVL.blockTimestamp, timestamp)) {
       prevFarmTVL.blockTimestamp = timestamp;
       prevFarmTVL.totalAmountLiquidity =
-        prevFarmTVL.totalAmountLiquidity.plus(delta);
-      prevFarmTVL.totalLiquidityValueUSD = convertTokenToDecimal(
-        prevFarmTVL.totalAmountLiquidity,
-        farmPool.lpDecimals
-      ).times(lpPrice);
+        prevFarmTVL.totalAmountLiquidity.plus(balanceDelta);
+      prevFarmTVL.totalLiquidityValueUSD =
+        prevFarmTVL.totalLiquidityValueUSD.plus(valueDelta);
       prevFarmTVL.save();
       return;
     } else {
-      delta = prevFarmTVL.totalAmountLiquidity.plus(delta);
+      balanceDelta = prevFarmTVL.totalAmountLiquidity.plus(balanceDelta);
+      valueDelta = prevFarmTVL.totalLiquidityValueUSD.plus(valueDelta);
     }
   }
 
   const entity = new FarmTVLUpdate(
     event.transaction.hash.concatI32(event.logIndex.toI32()).concatI32(1)
   );
-  entity.totalAmountLiquidity = delta;
-  entity.totalLiquidityValueUSD = convertTokenToDecimal(
-    entity.totalAmountLiquidity,
-    farmPool.lpDecimals
-  ).times(lpPrice);
+  entity.totalAmountLiquidity = balanceDelta;
+  entity.totalLiquidityValueUSD = valueDelta;
   entity.blockTimestamp = timestamp;
   entity.save();
   store.prevFarmTVL = entity.id;
