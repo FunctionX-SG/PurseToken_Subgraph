@@ -15,6 +15,7 @@ import { convertTokenToDecimal, isSameDate } from "./helpers";
 
 export function handleSync(event: SyncEvent): void {
   const bundle = FarmPool.load(event.address)!;
+  const lpContract = LpErc20Contract.bind(event.address);
 
   bundle.purseReserves = convertTokenToDecimal(
     event.params.reserve0,
@@ -25,6 +26,16 @@ export function handleSync(event: SyncEvent): void {
     event.params.reserve1,
     BUSD_TOKEN_DECIMALS
   );
+
+  const lpTotalSupplyResponse = lpContract.try_totalSupply();
+  if (lpTotalSupplyResponse.reverted) {
+    log.error(
+      "try_totalSupply call reverted. LP Address: {}, PURSE_FARM_ADDRESS Address: {}",
+      [event.address.toHexString(), PURSE_FARM_ADDRESS.toHexString()]
+    );
+    return;
+  }
+  bundle.lpTotalSupply = lpTotalSupplyResponse.value;
 
   bundle.pursePriceInUSD = bundle.purseReserves!.notEqual(ZERO_BD)
     ? bundle.busdReserves!.div(bundle.purseReserves!)
@@ -37,8 +48,6 @@ export function handleSync(event: SyncEvent): void {
   bundle.lpPriceInUSD = poolTVL.div(
     convertTokenToDecimal(bundle.lpTotalSupply, bundle.lpDecimals)
   );
-
-  const lpContract = LpErc20Contract.bind(event.address);
 
   const farmBalanceOfResponse = lpContract.try_balanceOf(
     Address.fromBytes(PURSE_FARM_ADDRESS)
