@@ -9,6 +9,7 @@ import {
   LpErc20 as LpErc20Contract,
   Sync as SyncEvent,
 } from "../generated/PurseFarm/LpErc20";
+import { PurseFarm as PurseFarmContract } from "../generated/PurseFarm/PurseFarm";
 import { FarmPool, FarmTVLUpdate, Store } from "../generated/schema";
 import {
   BUSD_TOKEN_DECIMALS,
@@ -20,8 +21,9 @@ import { updateBalanceOf } from "./purse-staking";
 import { convertTokenToDecimal, isSameDate } from "./helpers";
 
 export function handleSync(event: SyncEvent): void {
-  const farmPool = FarmPool.load(event.address)!;
-  const lpContract = LpErc20Contract.bind(event.address);
+  const farmPoolAddress = event.address;
+  const farmPool = FarmPool.load(farmPoolAddress)!;
+  const lpContract = LpErc20Contract.bind(farmPoolAddress);
 
   farmPool.purseReserves = convertTokenToDecimal(
     event.params.reserve0,
@@ -36,7 +38,7 @@ export function handleSync(event: SyncEvent): void {
   const lpTotalSupplyResponse = lpContract.try_totalSupply();
   if (lpTotalSupplyResponse.reverted) {
     log.error(
-      "try_totalSupply call reverted. LP Address: {}, PURSE_FARM_ADDRESS Address: {}",
+      "try_totalSupply call reverted. LP Address: {}, PURSE_FARM_ADDRESS: {}",
       [event.address.toHexString(), PURSE_FARM_ADDRESS.toHexString()]
     );
     return;
@@ -60,7 +62,7 @@ export function handleSync(event: SyncEvent): void {
   );
   if (farmBalanceOfResponse.reverted) {
     log.error(
-      "try_balanceOf call reverted. LP Address: {}, PURSE_FARM_ADDRESS Address: {}",
+      "try_balanceOf call reverted. LP Address: {}, PURSE_FARM_ADDRESS: {}",
       [event.address.toHexString(), PURSE_FARM_ADDRESS.toHexString()]
     );
     return;
@@ -83,6 +85,7 @@ export function handleSync(event: SyncEvent): void {
     event.transaction.hash.concatI32(event.logIndex.toI32()).concatI32(0),
     event.block.timestamp
   );
+  updateAPR(farmPoolAddress);
 }
 
 function handleFarmTransfer(
@@ -123,4 +126,37 @@ function handleFarmTransfer(
   store.prevFarmTVL = entity.id;
 
   store.save();
+}
+
+function updateAPR(farmPoolAddress: Address): void {
+  const farmPool = FarmPool.load(farmPoolAddress)!;
+  if (farmPool.latestFarmValue.equals(ZERO_BD)) {
+    return;
+  }
+
+  const farmContract = PurseFarmContract.bind(PURSE_FARM_ADDRESS);
+  const poolInfoResponse = farmContract.try_poolInfo(farmPoolAddress);
+  if (poolInfoResponse.reverted) {
+    log.error(
+      "try_poolInfo call reverted. PURSE_FARM_ADDRESS: {}, FARM_POOL_ADDRESS: {}",
+      [PURSE_FARM_ADDRESS.toHexString(), farmPoolAddress.toHexString()]
+    );
+    return;
+  }
+
+  const poolInfo = poolInfoResponse.value;
+  const bonusMultiplier = poolInfo.getBonusMultiplier().toBigDecimal();
+  const pursePerBlock = convertTokenToDecimal(
+    poolInfo.getPursePerBlock(),
+    PURSE_TOKEN_DECIMALS
+  );
+
+  farmPool.latestAPR = BigInt.fromU64(28000 * 365 * 100)
+    .toBigDecimal()
+    .times(pursePerBlock)
+    .times(bonusMultiplier)
+    .times(farmPool.pursePriceInUSD)
+    .div(farmPool.latestFarmValue);
+
+  farmPool.save();
 }

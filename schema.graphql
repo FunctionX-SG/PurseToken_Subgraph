@@ -42,4 +42,5 @@ type FarmPool @entity {
   busdReserves: BigDecimal
   latestFarmBalanceOf: BigInt!
   latestFarmValue: BigDecimal!
+  latestAPR: BigDecimal!
 }

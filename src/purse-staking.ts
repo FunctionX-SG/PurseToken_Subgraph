@@ -16,7 +16,7 @@ export function updateBalanceOf(eventId: Bytes, eventTimestamp: BigInt): void {
     stakingContract.try_availablePurseSupply();
   if (availablePurseSupplyResponse.reverted) {
     log.error(
-      "try_availablePurseSupply call reverted. PURSE_STAKING_ADDRESS Address: {}",
+      "try_availablePurseSupply call reverted. PURSE_STAKING_ADDRESS: {}",
       [PURSE_STAKING_ADDRESS.toHexString()]
     );
     return;

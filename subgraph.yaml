@@ -51,7 +51,7 @@ dataSources:
       file: ./src/purse-farm.ts
 templates:
   - kind: ethereum
-    name: FarmPoolContract
+    name: Pool
     network: bsc
     source:
       abi: FarmPool
@@ -68,6 +68,8 @@ templates:
           file: ./abis/FarmPool.json
         - name: LpErc20
           file: ./abis/LpErc20.json
+        - name: PurseFarm
+          file: ./abis/PurseFarm.json
       eventHandlers:
         - event: Sync(uint112,uint112)
           handler: handleSync

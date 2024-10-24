@@ -1,12 +1,12 @@
 import { AddNewPool as AddNewPoolEvent } from "../generated/PurseFarm/PurseFarm";
 import { LpErc20 } from "../generated/PurseFarm/LpErc20";
 import { FarmPool } from "../generated/schema";
-import { FarmPoolContract } from "../generated/templates";
+import { Pool } from "../generated/templates";
 import { BigInt, log } from "@graphprotocol/graph-ts";
 import { BI_18, ZERO_BD, ZERO_BI } from "./constants";
 
 export function handleAddPool(event: AddNewPoolEvent): void {
-  FarmPoolContract.create(event.params.lpToken);
+  Pool.create(event.params.lpToken);
   const farmPool = new FarmPool(event.params.lpToken);
   const lpToken = LpErc20.bind(event.params.lpToken);
 
@@ -33,6 +33,7 @@ export function handleAddPool(event: AddNewPoolEvent): void {
   farmPool.pursePriceInUSD = ZERO_BD;
   farmPool.latestFarmBalanceOf = ZERO_BI;
   farmPool.latestFarmValue = ZERO_BD;
+  farmPool.latestAPR = ZERO_BD;
 
   log.info(
     "farmPoolAdded: farmPool (id/lpToken address: {}) created on block number {}",
